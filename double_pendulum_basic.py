@@ -19,7 +19,7 @@ http://www.physics.usyd.edu.au/~wheat/dpend_html/solve_dpend.c
 Modified: 20170206 (Brad Beechler)
 """
 
-from logger import log
+from uplog import log
 from numpy import sin, cos
 import numpy as np
 import scipy.integrate as integrate
@@ -30,6 +30,8 @@ import moviepy.editor as mpy #pip install moviepy
 
 MAX_TIME = 30
 TIMESTEP = 0.02
+IMAGE_ARRAY = None
+
 G        = 9.8  # acceleration due to gravity, in m/s^2
 length_1 = 1.0  # length of pendulum weight 1 in m
 length_2 = 0.5  # length of pendulum weight 2 in m
@@ -71,13 +73,13 @@ def derivs(state, t):
 
 
 def draw_circle(image_array, x, y, radius, color='white', fade=True):
-        xp = min(x+radius+1, len(image_array[0,:])-1)
+        xp = min(x+radius+1, len(image_array[0, :])-1)
         xm = max(x-radius, 0)
-        yp = min(y+radius+1, len(image_array[:,0])-1)
+        yp = min(y+radius+1, len(image_array[:, 0])-1)
         ym = max(y-radius, 0)
         if fade:
             kernel = np.zeros((2*radius+1, 2*radius+1, 3))
-            ymask,xmask = np.ogrid[-radius:radius+1, -radius:radius+1]
+            ymask, xmask = np.ogrid[-radius:radius+1, -radius:radius+1]
             mask = xmask**2 + ymask**2 <= radius**2
             kernel[mask] = COLOR['light_'+color]
             mask = (xmask)**2 + (ymask)**2 <= (radius/1.3)**2
@@ -111,7 +113,7 @@ def draw_line(image_array, x1, y1, x2, y2, color='white', thick=1.0, fade=True):
         return image_array
 
 
-def coords_to_space(x1,y1,x2,y2,xgrid,ygrid, motion_space=None,
+def coords_to_space(x1, y1, x2, y2, xgrid, ygrid, motion_space=None,
                     size=10, color='red'):
     """
     Converts the pendulum's coordinates into an image.
@@ -121,28 +123,28 @@ def coords_to_space(x1,y1,x2,y2,xgrid,ygrid, motion_space=None,
         log.out.error("ERROR! x and y need same time dimension!")
         return None
     # This is [x,y,t,RGB]
-    if (motion_space is None):
+    if motion_space is None:
         motion_space = np.zeros([len(ygrid),len(xgrid), len(x1), 3],  dtype=float)
     for i in range(len(x1)):
         indexX1 = (np.abs(xgrid-x1[i])).argmin()
         indexY1 = (np.abs(ygrid-y1[i])).argmin()
-        motion_space[:,:,i,:] = draw_circle(motion_space[:,:,i,:], indexX1, indexY1,
-                                            size, color=color)
+        motion_space[:, :, i, :] = draw_circle(motion_space[:, :, i, :], indexX1, indexY1,
+                                               size, color=color)
         indexX2 = (np.abs(xgrid-x2[i])).argmin()
         indexY2 = (np.abs(ygrid-y2[i])).argmin()
-        motion_space[:,:,i,:] = draw_circle(motion_space[:,:,i,:], indexX2, indexY2,
-                                            size, color=color)
-        motion_space[:,:,i,:] = draw_line(motion_space[:,:,i,:], len(xgrid)/2, len(ygrid)/2,
-                                          indexX1, indexY1, thick=1.0)
-        motion_space[:,:,i,:] = draw_line(motion_space[:,:,i,:], indexX1, indexY1,
-                                          indexX2, indexY2, thick=1.0)
+        motion_space[:, :, i, :] = draw_circle(motion_space[:, :, i, :], indexX2, indexY2,
+                                               size, color=color)
+        motion_space[:, :, i, :] = draw_line(motion_space[:, :, i, :], len(xgrid)/2, len(ygrid)/2,
+                                             indexX1, indexY1, thick=1.0)
+        motion_space[:, :, i, :] = draw_line(motion_space[:, :, i, :], indexX1, indexY1,
+                                             indexX2, indexY2, thick=1.0)
     return motion_space
 
 
 def make_frame(t):
     index = int(t/TIMESTEP)
     #log.out.info(index)
-    return IMAGE_ARRAY[:,:,index,:]
+    return IMAGE_ARRAY[:, :, index, :]
 
 
 def main():
@@ -171,22 +173,21 @@ def main():
     pendulum = [{} for _ in range(ensemble_size)]
     for i in range(ensemble_size):
         pendulum_integral = integrate.odeint(derivs, state[i], t)
-        pendulum[i]['x1'] =  length_1 * sin(pendulum_integral[:,0])
-        pendulum[i]['y1'] = -length_1 * cos(pendulum_integral[:,0])
-        pendulum[i]['x2'] =  length_2 * sin(pendulum_integral[:,2]) + pendulum[i]['x1']
-        pendulum[i]['y2'] = -length_2 * cos(pendulum_integral[:,2]) + pendulum[i]['y1']
+        pendulum[i]['x1'] = length_1 * sin(pendulum_integral[:, 0])
+        pendulum[i]['y1'] = -length_1 * cos(pendulum_integral[:, 0])
+        pendulum[i]['x2'] = length_2 * sin(pendulum_integral[:, 2]) + pendulum[i]['x1']
+        pendulum[i]['y2'] = -length_2 * cos(pendulum_integral[:, 2]) + pendulum[i]['y1']
 
     xrange = 2.0
-    xres   = 600
-    xstep  = 2.0 * xrange / (xres-1)
-    xgrid  = np.arange(-1.0*xrange, xrange+xstep, xstep)
+    xres = 600
+    xstep = 2.0 * xrange / (xres-1)
+    xgrid = np.arange(-1.0*xrange, xrange+xstep, xstep)
     yrange = 2.0
-    yres   = 600
-    ystep  = 2.0 * yrange / (yres-1)
-    ygrid  = np.arange(1.0*yrange, -1.0*yrange-ystep, -1.0*ystep)
+    yres = 600
+    ystep = 2.0 * yrange / (yres-1)
+    ygrid = np.arange(1.0*yrange, -1.0*yrange-ystep, -1.0*ystep)
 
     global IMAGE_ARRAY
-    IMAGE_ARRAY = None
     for i in range(ensemble_size):
         if i % 2 == 0:
             color = 'red'
@@ -199,7 +200,7 @@ def main():
 
     thisFPS = 1.0 / TIMESTEP
 
-    animation  = mpy.VideoClip(make_frame, duration=MAX_TIME) # 2 seconds
+    animation = mpy.VideoClip(make_frame, duration=MAX_TIME)  # 2 seconds
     # You can write the result as a gif (veeery slow) or a video:
     #animation.write_gif(make_frame, fps=15)
     animation.write_videofile('pendulum.mp4', fps=thisFPS)
